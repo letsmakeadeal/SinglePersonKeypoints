@@ -1,0 +1,78 @@
+import torch
+from torch import nn
+from typing import Tuple
+
+from pipeline.losses import L1Loss, SigmoidFocalLoss
+from pipeline.utils import draw_heatmap
+
+
+class ConvHead(nn.Module):
+    def __init__(self,
+                 input_feature_depth: int,
+                 output_stride: int = 1,
+                 debug=False):
+        super(ConvHead, self).__init__()
+        self._debug = debug
+        self._validation_score_threshold = 0.3
+        self._loss = L1Loss()
+        self._output_stride = output_stride
+        self._first_conv_block = nn.Sequential(
+            nn.Conv2d(input_feature_depth, input_feature_depth, 3, 1, 1),
+            nn.BatchNorm2d(input_feature_depth),
+            nn.ReLU(inplace=True)
+        )
+
+        self._second_conv_block = nn.Sequential(
+            nn.Conv2d(input_feature_depth, input_feature_depth, 3, 1, 1),
+            nn.BatchNorm2d(input_feature_depth),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x: torch.tensor):
+        x = self._first_conv_block(x)
+        x = self._second_conv_block(x)
+
+        return x
+
+    def loss(self, predictions: torch.tensor, keypoints_gt: torch.tensor):
+        heatmaps_for_persons = torch.stack([draw_heatmap(gt_keypoints=keypoints_gt[person_kps],
+                                                         feat_shape=predictions.shape[1:],
+                                                         stride=1,
+                                                         radius=0.1) for person_kps in range(len(keypoints_gt))])
+
+        total_loss = self._loss(predicted=predictions, gt=heatmaps_for_persons)
+
+        return dict(heatmaploss=total_loss)
+
+    def get_keypoints(self, predicted: torch.tensor, gt_info: torch.tensor):
+        feature_shape = predicted.shape
+        predicted_flattened = predicted.view(feature_shape[0], feature_shape[1],
+                                             feature_shape[2] * feature_shape[3])
+        maxs, argmaxes = torch.max(predicted_flattened, dim=-1)
+        argmaxes_to_keypoints = torch.zeros((argmaxes.shape[0], argmaxes.shape[1], 2))
+        argmaxes_to_keypoints[..., 0] = argmaxes % feature_shape[3] - 1
+        argmaxes_to_keypoints[..., 0][argmaxes_to_keypoints[..., 0] < 0] = 0
+        argmaxes_to_keypoints[..., 1] = argmaxes // feature_shape[2]
+
+        argmaxes_to_keypoints *= self._output_stride
+        visability = torch.zeros_like(argmaxes_to_keypoints[..., 1]).unsqueeze(-1)
+        validated_maxs_idxs = maxs > self._validation_score_threshold
+        visability[validated_maxs_idxs] = 2
+        argmaxes_to_keypoints = torch.cat([argmaxes_to_keypoints, visability], dim=-1)
+
+        output_keypoints_as_array = []
+        if self._debug:
+            for image_idx in range(argmaxes_to_keypoints.shape[0]):
+                keypoints = argmaxes_to_keypoints[image_idx]
+                pad_x = gt_info['pad_x'][image_idx]
+                pad_y = gt_info['pad_y'][image_idx]
+                scale = gt_info['scale'][image_idx]
+                keypoints[..., :2] /= scale
+                keypoints[..., :0] -= pad_x
+                keypoints[..., :1] -= pad_y
+
+                output_keypoints_as_array.append(keypoints)
+        else:
+            output_keypoints_as_array = argmaxes_to_keypoints.cpu().numpy()
+
+        return output_keypoints_as_array

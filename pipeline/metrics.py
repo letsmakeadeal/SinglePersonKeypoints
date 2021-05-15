@@ -90,6 +90,7 @@ class CocoAPs(Metric):
         coco_eval.accumulate()
         coco_eval.summarize()
         stats = coco_eval.stats
+        print(stats)
         self.reset_state()
 
         return stats[0]

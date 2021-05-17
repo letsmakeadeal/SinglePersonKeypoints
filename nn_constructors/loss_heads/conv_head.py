@@ -29,9 +29,12 @@ class ConvHead(nn.Module):
             nn.ReLU(inplace=False)
         )
 
+        self._last_conv_module = nn.Conv2d(input_feature_depth, input_feature_depth, 3, 1, 1)
+
     def forward(self, x: torch.tensor):
         x = self._first_conv_block(x)
         x = self._second_conv_block(x)
+        x = self._last_conv_module(x)
 
         return x
 

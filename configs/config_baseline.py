@@ -20,8 +20,8 @@ trainer_cfg = dict(
     callbacks=[
         dict(type='LearningRateMonitor', logging_interval='step'),
         dict(type='ModelCheckpoint', save_top_k=2, verbose=True, mode='min',
-             monitor='val_loss', dirpath='../results/',
-             filename='mhv2_{epoch:02d}_{val_loss:.4f}')
+             monitor='cocoaps', dirpath='../results/',
+             filename='mhv2_{epoch:02d}_{cocoaps:.4f}')
     ],
     benchmark=True,
     deterministic=True,

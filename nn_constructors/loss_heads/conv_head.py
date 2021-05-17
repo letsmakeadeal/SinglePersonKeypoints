@@ -15,18 +15,18 @@ class ConvHead(nn.Module):
         super(ConvHead, self).__init__()
         self._debug = debug
         self._score_threshold = thrs_conf
-        self._loss = L1Loss()
+        self._loss = SigmoidFocalLoss()
         self._output_stride = output_stride
         self._first_conv_block = nn.Sequential(
             nn.Conv2d(input_feature_depth, input_feature_depth, 3, 1, 1),
             nn.BatchNorm2d(input_feature_depth),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=False)
         )
 
         self._second_conv_block = nn.Sequential(
             nn.Conv2d(input_feature_depth, input_feature_depth, 3, 1, 1),
             nn.BatchNorm2d(input_feature_depth),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=False)
         )
 
     def forward(self, x: torch.tensor):
@@ -51,7 +51,7 @@ class ConvHead(nn.Module):
                                              feature_shape[2] * feature_shape[3])
         maxs, argmaxes = torch.max(predicted_flattened, dim=-1)
         argmaxes_to_keypoints = torch.zeros((argmaxes.shape[0], argmaxes.shape[1], 2))
-        argmaxes_to_keypoints[..., 0] = argmaxes % feature_shape[3] - 1
+        argmaxes_to_keypoints[..., 0] = argmaxes % feature_shape[3]
         argmaxes_to_keypoints[..., 0][argmaxes_to_keypoints[..., 0] < 0] = 0
         argmaxes_to_keypoints[..., 1] = argmaxes // feature_shape[2]
 
@@ -65,9 +65,9 @@ class ConvHead(nn.Module):
         if self._debug:
             for image_idx in range(argmaxes_to_keypoints.shape[0]):
                 keypoints = argmaxes_to_keypoints[image_idx]
-                pad_x = batch_info['pad_x'][image_idx]
-                pad_y = batch_info['pad_y'][image_idx]
-                scale = batch_info['scale'][image_idx]
+                pad_x = batch_info['pad_x']
+                pad_y = batch_info['pad_y']
+                scale = batch_info['scale']
                 keypoints[..., :2] /= scale
                 keypoints[..., :0] -= pad_x
                 keypoints[..., :1] -= pad_y

@@ -28,13 +28,22 @@ class ResizeAndPadImage(object):
         vertically_orientation = h > w
         scale = min(self.size[0] / float(h), self.size[1] / float(w))
         image = cv2.resize(image, None, fx=scale, fy=scale, interpolation=random_interpolation())
+        if vertically_orientation:
+            pad_x = self.size[1] / 2 - w * scale / 2
+            pad_y = 0
+        else:
+            pad_y = self.size[0] / 2 - h * scale / 2
+            pad_x = 0
+
+        data['pad_x'] = pad_x
+        data['pad_y'] = pad_y
 
         if vertically_orientation:
-            x1 = int(self.size[1] / 2 - w * scale / 2)
+            x1 = int(pad_x)
             x2 = int(x1) + image.shape[1]
             canvas[:image.shape[0], x1: x2] = image
         else:
-            y1 = int(self.size[0] / 2 - h * scale / 2)
+            y1 = int(pad_y)
             y2 = int(y1) + image.shape[0]
             canvas[y1:y2, :image.shape[1]] = image
 
@@ -47,16 +56,9 @@ class ResizeAndPadImage(object):
             keypoints[visible_kps_idx] *= scale
             keypoints[visible_kps_idx, 2] = 2
             if vertically_orientation:
-                pad_x = self.size[1] / 2 - w * scale / 2
                 keypoints[visible_kps_idx, 0] += pad_x
-                data['pad_x'] = pad_x
-                data['pad_y'] = 0
             else:
-                pad_y = self.size[0] / 2 - h * scale / 2
                 keypoints[visible_kps_idx, 1] += pad_y
-                data['pad_x'] = 0
-                data['pad_y'] = pad_y
-
             data['keypoints'] = keypoints
 
         return data

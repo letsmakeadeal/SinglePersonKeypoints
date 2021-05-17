@@ -14,6 +14,7 @@ def process_image(image_initial,
                   model: pl.LightningModule,
                   transforms):
     image_rgb = copy.deepcopy(cv2.cvtColor(image_initial, cv2.COLOR_BGR2RGB))
+
     image_dict = dict(image=image_rgb)
     batch_info = transforms(**image_dict)
 
@@ -25,13 +26,14 @@ def process_image(image_initial,
 
 
 if __name__ == '__main__':
-    path_to_dir = '/home/ivan/MLTasks/Datasets/PosesDatasets/LV-MHP-v2-single/val'
-    checkpoint_path = '/home/ivan/MLTasks/home_projects/SinglePersonKpsEstimation/results/'
+    path_to_dir = '/home/ivan/MLTasks/Datasets/PosesDatasets/LV-MHP-v2-single/train'
+    checkpoint_path = '/home/ivan/MLTasks/home_projects/SinglePersonKpsEstimation/results/' \
+                      'unet_epoch=30_val_loss=0.0034.ckpt'
     width = 128
     height = 128
     num_classes = 17
     stride = 1
-    thrs_conf = 0.5
+    thrs_conf = 0
 
     transforms = A.Compose([
         ResizeAndPadImage(height=height, width=width),
@@ -67,18 +69,20 @@ if __name__ == '__main__':
     for person_image_folder in os.listdir(path_to_dir):
         person_image_folder_path = os.path.join(path_to_dir, person_image_folder)
         for person_image in os.listdir(person_image_folder_path):
-            if person_image.split('.')[-1] == 'txt':
+            if person_image.split('.')[-1] == 'pickle':
                 continue
 
             image_initial = cv2.imread(os.path.join(person_image_folder_path, person_image))
+            cv2.imshow("initial", image_initial)
             keypoints = process_image(image_initial=image_initial,
-                                      model=model)
+                                      model=model,
+                                      transforms=transforms)
             x = keypoints[0][0::3]
             y = keypoints[0][1::3]
             visabilities = keypoints[0][2::3]
             for (x, y, v) in zip(x, y, visabilities):
                 if v == 2:
-                    image_copy_debug = cv2.circle(image_copy_debug, (int(x), int(y)), 4, (0, 0, 255), 2)
+                    image_initial = cv2.circle(image_initial, (int(x), int(y)), 4, (0, 0, 255), 2)
 
-            cv2.imshow('debug', image_copy_debug)
+            cv2.imshow('debug', image_initial)
             cv2.waitKey(0)

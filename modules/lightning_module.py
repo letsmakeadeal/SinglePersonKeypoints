@@ -50,7 +50,7 @@ class LightningKeypointsEstimator(pl.LightningModule):
 
         if checkpoint_path is not None:
             loaded_dict = torch.load(checkpoint_path)['state_dict']
-            self.load_state_dict(loaded_dict, strict=False)
+            self.load_state_dict(loaded_dict, strict=True)
 
     def _build_models(self):
         self.backbone = build_backbone_from_cfg(self.backbone_cfg.copy())

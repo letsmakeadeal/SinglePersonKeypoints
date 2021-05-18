@@ -26,14 +26,14 @@ def process_image(image_initial,
 
 
 if __name__ == '__main__':
-    path_to_dir = '/home/ivan/MLTasks/Datasets/PosesDatasets/LV-MHP-v2-single/train'
+    path_to_dir = '/home/ivan/MLTasks/Datasets/PosesDatasets/LV-MHP-v2-single/val'
     checkpoint_path = '/home/ivan/MLTasks/home_projects/SinglePersonKpsEstimation/results/' \
-                      'unet_epoch=30_val_loss=0.0034.ckpt'
+                      'mhv2_epoch=21_cocoaps=0.5205.ckpt'
     width = 128
     height = 128
     num_classes = 17
     stride = 1
-    thrs_conf = 0
+    thrs_conf = 0.1
 
     transforms = A.Compose([
         ResizeAndPadImage(height=height, width=width),
@@ -54,7 +54,7 @@ if __name__ == '__main__':
         input_feature_depth=num_classes,
         output_stride=stride,
         thrs_conf=thrs_conf,
-        debug=True
+        test=True
     )
     model = LightningKeypointsEstimator.load_from_checkpoint(checkpoint_path=checkpoint_path,
                                                              load_from_checkpoint=checkpoint_path,
@@ -77,9 +77,9 @@ if __name__ == '__main__':
             keypoints = process_image(image_initial=image_initial,
                                       model=model,
                                       transforms=transforms)
-            x = keypoints[0][0::3]
-            y = keypoints[0][1::3]
-            visabilities = keypoints[0][2::3]
+            x = keypoints[0][..., 0]
+            y = keypoints[0][..., 1]
+            visabilities = keypoints[0][..., 2]
             for (x, y, v) in zip(x, y, visabilities):
                 if v == 2:
                     image_initial = cv2.circle(image_initial, (int(x), int(y)), 4, (0, 0, 255), 2)

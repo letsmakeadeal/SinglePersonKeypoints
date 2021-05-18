@@ -11,9 +11,9 @@ class ConvHead(nn.Module):
                  input_feature_depth: int,
                  output_stride: int = 1,
                  thrs_conf: float = 0.3,
-                 debug=False):
+                 test=False):
         super(ConvHead, self).__init__()
-        self._debug = debug
+        self._test = test
         self._score_threshold = thrs_conf
         self._loss = SigmoidFocalLoss()
         self._output_stride = output_stride
@@ -49,6 +49,7 @@ class ConvHead(nn.Module):
         return dict(heatmaploss=total_loss)
 
     def get_keypoints(self, predicted: torch.tensor, batch_info: torch.tensor):
+        predicted = predicted.sigmoid()
         feature_shape = predicted.shape
         predicted_flattened = predicted.view(feature_shape[0], feature_shape[1],
                                              feature_shape[2] * feature_shape[3])
@@ -65,17 +66,26 @@ class ConvHead(nn.Module):
         argmaxes_to_keypoints = torch.cat([argmaxes_to_keypoints, visability], dim=-1)
 
         output_keypoints_as_array = []
-        if self._debug:
+        if self._test:
+            if False:
+                import cv2
+                import numpy as np
+                canvas = np.zeros((predicted.shape[-2], predicted.shape[-1], 1))
+                for kps in argmaxes_to_keypoints[0]:
+                    canvas = cv2.circle(canvas, (int(kps[0]), int(kps[1])), 4, (255, 255, 255), 2)
+                cv2.imshow('canvas', canvas)
+                cv2.waitKey(0)
+
             for image_idx in range(argmaxes_to_keypoints.shape[0]):
                 keypoints = argmaxes_to_keypoints[image_idx]
                 pad_x = batch_info['pad_x']
                 pad_y = batch_info['pad_y']
                 scale = batch_info['scale']
+                keypoints[..., 0] -= pad_x
+                keypoints[..., 1] -= pad_y
                 keypoints[..., :2] /= scale
-                keypoints[..., :0] -= pad_x
-                keypoints[..., :1] -= pad_y
 
-                output_keypoints_as_array.append(keypoints.flatten())
+                output_keypoints_as_array.append(keypoints)
         else:
             output_keypoints_as_array = argmaxes_to_keypoints.cpu().numpy()
 

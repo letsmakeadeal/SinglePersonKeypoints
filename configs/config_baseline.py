@@ -19,7 +19,7 @@ trainer_cfg = dict(
     max_epochs=epochs,
     callbacks=[
         dict(type='LearningRateMonitor', logging_interval='step'),
-        dict(type='ModelCheckpoint', save_top_k=2, verbose=True, mode='min',
+        dict(type='ModelCheckpoint', save_top_k=2, verbose=True, mode='max',
              monitor='cocoaps', dirpath='../results/',
              filename='mhv2_{epoch:02d}_{cocoaps:.4f}')
     ],

@@ -9,7 +9,6 @@ import torch.utils.checkpoint as cp
 
 import mmcv
 from mmpose.utils import get_root_logger
-from mmpose.models.registry import BACKBONES
 from mmpose.models.backbones.resnet import BasicBlock, Bottleneck
 from mmpose.models.backbones.utils import load_checkpoint, channel_shuffle
 
@@ -270,7 +269,6 @@ class Stem(nn.Module):
 
 
 class IterativeHead(nn.Module):
-
     def __init__(self, in_channels, conv_cfg=None, norm_cfg=dict(type='BN')):
         super().__init__()
         projects = []
@@ -642,7 +640,6 @@ class LiteHRModule(nn.Module):
         return out
 
 
-@BACKBONES.register_module()
 class LiteHRNet(nn.Module):
     """Lite-HRNet backbone.
     `High-Resolution Representations for Labeling Pixels and Regions

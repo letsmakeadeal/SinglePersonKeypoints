@@ -1,1 +1,3 @@
 segmentation-models-pytorch
+mmpose
+mmcv-full

@@ -62,9 +62,9 @@ def draw_heatmap(gt_keypoints, feat_shape: Tuple[int, int], stride: int, radius:
 
     heatmap = gt_keypoints.new_zeros((num_keypoints, output_h, output_w))
 
-    keys = gt_keypoints / stride
+    keys = gt_keypoints[..., :2] / stride
     keys_ints = keys[..., :2].to(torch.int)
-    visibilities = keys[..., 2].to(torch.int)
+    visibilities = gt_keypoints[..., 2].to(torch.int)
 
     h_radius = int(radius * output_h)
     w_radius = int(radius * output_w)

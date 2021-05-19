@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from typing import Tuple
+from typing import Tuple, List
 
 from pipeline.losses import L1Loss, SigmoidFocalLoss
 from pipeline.utils import draw_heatmap
@@ -9,6 +9,7 @@ from pipeline.utils import draw_heatmap
 class ConvHead(nn.Module):
     def __init__(self,
                  input_feature_depth: int,
+                 output_feature_depth: int,
                  output_stride: int = 1,
                  thrs_conf: float = 0.3,
                  test=False):
@@ -29,9 +30,12 @@ class ConvHead(nn.Module):
             nn.ReLU(inplace=False)
         )
 
-        self._last_conv_module = nn.Conv2d(input_feature_depth, input_feature_depth, 3, 1, 1)
+        self._last_conv_module = nn.Conv2d(input_feature_depth, output_feature_depth, 3, 1, 1)
 
-    def forward(self, x: torch.tensor):
+    def forward(self, x: Tuple[torch.tensor, List]):
+        if isinstance(x, List):
+            x = x[0]
+
         x = self._first_conv_block(x)
         x = self._second_conv_block(x)
         x = self._last_conv_module(x)
@@ -41,7 +45,7 @@ class ConvHead(nn.Module):
     def loss(self, predictions: torch.tensor, keypoints_gt: torch.tensor):
         heatmaps_for_persons = torch.stack([draw_heatmap(gt_keypoints=keypoints_gt[person_kps],
                                                          feat_shape=predictions.shape[1:],
-                                                         stride=1,
+                                                         stride=self._output_stride,
                                                          radius=0.1) for person_kps in range(len(keypoints_gt))])
 
         total_loss = self._loss(predicted=predictions, gt=heatmaps_for_persons)

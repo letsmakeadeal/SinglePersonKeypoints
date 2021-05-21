@@ -10,6 +10,14 @@ class L1Loss(object):
         return torch.abs(predicted - gt).mean()
 
 
+class MSELoss(object):
+    def __init__(self):
+        self._mse_loss = nn.MSELoss(reduction='mean')
+
+    def __call__(self, predicted: torch.tensor, gt: torch.tensor):
+        return self._mse_loss(predicted.float(), gt.float())
+
+
 class SigmoidFocalLoss(object):
     def __init__(self, gamma: float = 2.0):
         self._gamma = gamma

@@ -28,11 +28,11 @@ def process_image(image_initial,
 if __name__ == '__main__':
     path_to_dir = '/home/ivan/MLTasks/Datasets/PosesDatasets/LV-MHP-v2-single/val'
     checkpoint_path = '/home/ivan/MLTasks/home_projects/SinglePersonKpsEstimation/results/' \
-                      'mhv2_epoch=21_cocoaps=0.5205.ckpt'
+                      'mhv2_epoch=27_cocoaps=0.3151.ckpt'
     width = 128
     height = 128
     num_classes = 17
-    stride = 1
+    stride = 4
     thrs_conf = 0.1
 
     transforms = A.Compose([
@@ -42,18 +42,33 @@ if __name__ == '__main__':
     ])
 
     backbone_cfg = dict(
-        type='Unet',
-        encoder_name="mobilenet_v2",
-        encoder_weights="imagenet",
+        type='LiteHRNet',
         in_channels=3,
-        classes=num_classes,
-    )
+        extra=dict(
+            stem=dict(stem_channels=32, out_channels=32, expand_ratio=1),
+            num_stages=3,
+            stages_spec=dict(
+                num_modules=(2, 4, 2),
+                num_branches=(2, 3, 4),
+                num_blocks=(2, 2, 2),
+                module_type=('NAIVE', 'NAIVE', 'NAIVE'),
+                with_fuse=(True, True, True),
+                reduce_ratios=(1, 1, 1),
+                num_channels=(
+                    (30, 60),
+                    (30, 60, 120),
+                    (30, 60, 120, 240),
+                )),
+            with_head=True,
+        ))
 
     loss_head_cfg = dict(
-        type='ConvHead',
-        input_feature_depth=num_classes,
+        type='KeypointsExtractorHead',
+        input_feature_depth=30,
+        output_feature_depth=num_classes,
         output_stride=stride,
         thrs_conf=thrs_conf,
+        use_offsets=True,
         test=True
     )
     model = LightningKeypointsEstimator.load_from_checkpoint(checkpoint_path=checkpoint_path,

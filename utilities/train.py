@@ -43,8 +43,6 @@ if __name__ == '__main__':
 
     trainer = Trainer(
         logger=[logger],
-        # limit_train_batches=0.01,
-        # limit_val_batches=0.1,
         **config.trainer_cfg,
     )
 

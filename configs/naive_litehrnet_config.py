@@ -1,8 +1,8 @@
 seed = 42
 gpus = [0]
-batch_size = 32
+batch_size = 1
 epochs = 32
-num_workers = 8
+num_workers = 1
 
 train_dataset_len = 40184 // batch_size
 height = 128
@@ -40,22 +40,19 @@ backbone_cfg = dict(
     type='LiteHRNet',
     in_channels=3,
     extra=dict(
-        stem=dict(
-            stem_channels=32,
-            out_channels=32,
-            expand_ratio=1),
+        stem=dict(stem_channels=32, out_channels=32, expand_ratio=1),
         num_stages=3,
         stages_spec=dict(
-            num_modules=(3, 8, 3),
+            num_modules=(2, 4, 2),
             num_branches=(2, 3, 4),
             num_blocks=(2, 2, 2),
-            module_type=('LITE', 'LITE', 'LITE'),
+            module_type=('NAIVE', 'NAIVE', 'NAIVE'),
             with_fuse=(True, True, True),
-            reduce_ratios=(8, 8, 8),
+            reduce_ratios=(1, 1, 1),
             num_channels=(
-                (40, 80),
-                (40, 80, 160),
-                (40, 80, 160, 320),
+                (30, 60),
+                (30, 60, 120),
+                (30, 60, 120, 240),
             )),
         with_head=True,
     ))
@@ -90,7 +87,7 @@ train_dataset_cfg = dict(
     type='MHV2',
     is_train=True,
     dataset_dir='/home/ivan/MLTasks/Datasets/PosesDatasets/LV-MHP-v2-single',
-    debug=False
+    debug=True
 
 )
 
@@ -98,7 +95,7 @@ val_dataset_cfg = dict(
     type='MHV2',
     is_train=False,
     dataset_dir='/home/ivan/MLTasks/Datasets/PosesDatasets/LV-MHP-v2-single',
-    debug=False
+    debug=True
 )
 
 train_dataloader_cfg = dict(

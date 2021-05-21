@@ -1,3 +1,3 @@
-from .conv_head import ConvHead
+from .keypoints_head import KeypointsExtractorHead
 
-__all__ = ['ConvHead']
+__all__ = ['KeypointsExtractorHead']

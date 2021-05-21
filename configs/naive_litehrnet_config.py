@@ -1,8 +1,8 @@
 seed = 42
 gpus = [0]
-batch_size = 1
+batch_size = 32
 epochs = 32
-num_workers = 1
+num_workers = 8
 
 train_dataset_len = 40184 // batch_size
 height = 128
@@ -87,7 +87,7 @@ train_dataset_cfg = dict(
     type='MHV2',
     is_train=True,
     dataset_dir='/home/ivan/MLTasks/Datasets/PosesDatasets/LV-MHP-v2-single',
-    debug=True
+    debug=False
 
 )
 
@@ -95,7 +95,7 @@ val_dataset_cfg = dict(
     type='MHV2',
     is_train=False,
     dataset_dir='/home/ivan/MLTasks/Datasets/PosesDatasets/LV-MHP-v2-single',
-    debug=True
+    debug=False
 )
 
 train_dataloader_cfg = dict(

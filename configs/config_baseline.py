@@ -1,8 +1,8 @@
 seed = 42
 gpus = [0]
-batch_size = 16
+batch_size = 32
 epochs = 32
-num_workers = 4
+num_workers = 8
 
 train_dataset_len = 40184 // batch_size
 height = 128
@@ -45,9 +45,11 @@ backbone_cfg = dict(
 )
 
 loss_head_cfg = dict(
-    type='ConvHead',
+    type='KeypointsExtractorHead',
     input_feature_depth=num_classes,
-    output_stride=stride
+    output_feature_depth=num_classes,
+    output_stride=stride,
+    use_offsets=False
 )
 
 metric_cfgs = [
@@ -105,7 +107,7 @@ optimizer_cfg = dict(
 scheduler_cfg = dict(
     type='CyclicLR',
     base_lr=1e-6 * len(gpus),
-    max_lr=2e-3 * len(gpus),
+    max_lr=2e-4 * len(gpus),
     step_size_up=int(train_dataset_len * epochs // (2 * len(gpus))),
     cycle_momentum=False,
 )

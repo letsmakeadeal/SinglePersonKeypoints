@@ -62,7 +62,7 @@ backbone_cfg = dict(
 
 loss_head_cfg = dict(
     type='KeypointsExtractorHead',
-    input_feature_depth=30,
+    input_feature_depth=40,
     output_feature_depth=num_classes,
     output_stride=stride,
     use_offsets=True

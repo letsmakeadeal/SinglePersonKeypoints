@@ -5,7 +5,6 @@ import numpy as np
 
 from .utils import bbox_from_keypoints, random_interpolation
 
-
 __all__ = ['Flip', 'Rotate', 'ResizeAndPadImage']
 
 
@@ -16,23 +15,23 @@ class ResizeAndPadImage(object):
                  height: int,
                  stride: int = 1,
                  pad: int = 0):
-        self.size = height, width
-        self.stride = stride
-        self.pad = pad
+        self._size = height, width
+        self._stride = stride
+        self._pad = pad
 
-    def __call__(self,  force_apply: bool, **data):
+    def __call__(self, force_apply: bool, **data):
         image = data['image']
-        canvas = np.ones((*self.size, 3), dtype=np.uint8) * self.pad
+        canvas = np.ones((*self._size, 3), dtype=np.uint8) * self._pad
 
         h, w = image.shape[:2]
         vertically_orientation = h > w
-        scale = min(self.size[0] / float(h), self.size[1] / float(w))
+        scale = min(self._size[0] / float(h), self._size[1] / float(w))
         image = cv2.resize(image, None, fx=scale, fy=scale, interpolation=random_interpolation())
         if vertically_orientation:
-            pad_x = self.size[1] / 2 - w * scale / 2
+            pad_x = self._size[1] / 2 - w * scale / 2
             pad_y = 0
         else:
-            pad_y = self.size[0] / 2 - h * scale / 2
+            pad_y = self._size[0] / 2 - h * scale / 2
             pad_x = 0
 
         data['pad_x'] = pad_x
@@ -65,13 +64,18 @@ class ResizeAndPadImage(object):
 
 
 class Flip(object):
-    def __call__(self, force_apply: bool, **data):
+    def __init__(self, p: float = 0.5):
+        self._p = p
+
+    def __call__(self, force_apply: bool, p=0.5, **data):
+        if random.random() < self._p:
+            return data
         image = data['image']
+        h, w = data['image'].shape[:2]
         data['image'] = image[:, ::-1]
 
         if 'keypoints' in data:
             keypoints = data['keypoints']
-
             flipped = keypoints.copy()
             flipped[..., 0] = image.shape[1] - keypoints[..., 0] - 1
             flipped_pairs = flipped.copy()
@@ -79,13 +83,14 @@ class Flip(object):
                 flipped_pairs[a, :] = flipped[b, :]
                 flipped_pairs[b, :] = flipped[a, :]
 
-            verified_kps = (flipped_pairs[..., 0] >= 0) * (flipped_pairs[..., 1] >= 0) *  \
-                           (flipped_pairs[..., 0] <= data['image'].shape[1]) * \
-                           (flipped_pairs[..., 1] <= data['image'].shape[0]) * \
-                           (flipped_pairs[..., 2] > 0)
+            verified_kps = np.where((flipped_pairs[..., 0] >= 0) *
+                                    (flipped_pairs[..., 1] >= 0) *
+                                    (flipped_pairs[..., 0] <= w) *
+                                    (flipped_pairs[..., 1] <= h) *
+                                    (flipped_pairs[..., 2] > 0))[0]
             incorrect_kps = np.array([i for i in range(len(keypoints)) if i not in verified_kps])
-            flipped_pairs[incorrect_kps] = -1
-
+            flipped_pairs[incorrect_kps, :2] = -1
+            flipped_pairs[incorrect_kps, 2] = 0
             data['keypoints'] = flipped_pairs
 
         return data
@@ -94,12 +99,17 @@ class Flip(object):
 class Rotate(object):
 
     def __init__(self,
+                 p: float = 0.5,
                  angle: int = 45,
                  pad: int = 0):
-        self.angle = angle
-        self.pad = pad
+        self._angle = angle
+        self._pad = pad
+        self._p = p
 
-    def __call__(self,  force_apply: bool, **data):
+    def __call__(self, force_apply: bool, **data):
+        if random.random() < self._p:
+            return data
+
         keypoints = data['keypoints']
         visible_kps_idx = keypoints[:, 2] >= 0
         keypoints_visible = keypoints[visible_kps_idx]
@@ -108,16 +118,29 @@ class Rotate(object):
         image = data['image']
         h, w = image.shape[:2]
 
+        prev_incorrect_number = len(data['keypoints'])
         for _ in range(3):
             keypoints_rotated = keypoints_visible.copy()
-            angle = random.randint(-self.angle, self.angle)
-            transform = cv2.getRotationMatrix2D((x1 - x0, y1 - y0), angle, 1)
-            image_rotated = cv2.warpAffine(image, transform, (w, h), flags=random_interpolation(), borderValue=self.pad)
-            keypoints_rotated[..., :2] = cv2.transform(keypoints_visible[..., :2].reshape(-1, 1, 2), transform).reshape(-1, 2)
+            angle = random.randint(-self._angle, self._angle)
 
-            if np.all(keypoints_rotated[..., :2] > 0) and \
-                    np.all(keypoints_rotated[..., 0] < w) and \
-                    np.all(keypoints_rotated[..., 1] < h):
+            transform = cv2.getRotationMatrix2D((x1 - x0, y1 - y0), angle, 1)
+            image_rotated = cv2.warpAffine(image, transform, (w, h), flags=random_interpolation(),
+                                           borderValue=self._pad)
+            keypoints_rotated[..., :2] = cv2.transform(keypoints_visible[..., :2].reshape(-1, 1, 2), transform).reshape(
+                -1, 2)
+
+            verified_kps = np.where((keypoints_rotated[..., 0] >= 0) *
+                                    (keypoints_rotated[..., 1] >= 0) *
+                                    (keypoints_rotated[..., 0] <= w) *
+                                    (keypoints_rotated[..., 1] <= h) *
+                                    (keypoints_rotated[..., 2] > 0))[0]
+
+            incorrect_kps = np.array([i for i in range(len(keypoints)) if i not in verified_kps])
+            now_incorrect_number = len(incorrect_kps)
+
+            if now_incorrect_number < prev_incorrect_number:
+                keypoints_rotated[incorrect_kps, :2] = -1
+                keypoints_rotated[incorrect_kps, 2] = 0
                 data['image'] = image_rotated
                 keypoints[visible_kps_idx] = keypoints_rotated
                 data['keypoints'] = keypoints
@@ -172,4 +195,3 @@ class SquareCrop(object):
         data['keypoints'] = keypoints
 
         return data
-

@@ -14,10 +14,13 @@ classes_mh2v = ['Right-ankle', 'Right-knee', 'Right-hip', 'Left-hip',
 mhv2_to_coco_correspondence = [(0, 10), (1, 9), (2, 8), (3, 11),
                                (4, 12), (5, 13), (9, 0), (10, 4), (11, 3),
                                (12, 2), (13, 5), (14, 6), (15, 7)]
+coco_sceleton = [(2, 3), (3, 4), (2, 5), (2, 8),
+                 (5, 6), (5, 11), (6, 7), (8, 9), (8, 11),
+                 (9, 10), (11, 12), (12, 13)]
 
 if __name__ == '__main__':
     padding_size_percent = 0
-    debug = False
+    debug = True
     path_to_dataset = '/home/ivan/MLTasks/Datasets/PosesDatasets/LV-MHP-v2' \
                       '/LV-MHP-v2'
     output_single_person_data_path = '/home/ivan/MLTasks/Datasets/PosesDatasets/LV-MHP-v2-single'
@@ -100,6 +103,12 @@ if __name__ == '__main__':
                 single_person_image = image[int(top_left[1] - padding_y): int(bottom_right[1] + padding_y),
                                       int(top_left[0] - padding_x): int(bottom_right[0] + padding_x)]
                 if debug:
+                    for (first_idx, second_idx) in coco_sceleton:
+                        if visability_column[first_idx] == 2 and visability_column[second_idx] == 2:
+                            single_person_image = cv2.line(single_person_image,
+                                                           (int(xs_transformed[first_idx]), int(ys_transformed[first_idx])),
+                                                           (int(xs_transformed[second_idx]), int(ys_transformed[second_idx])),
+                                                           (0, 0, 255), 2)
                     for (x, y) in zip(xs_transformed[verified_kps], ys_transformed[verified_kps]):
                         single_person_image = cv2.circle(single_person_image, (int(x), int(y)), 4, (0, 0, 255), 2)
 

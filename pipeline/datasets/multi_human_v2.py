@@ -5,7 +5,7 @@ import cv2
 
 from torch.utils.data import Dataset
 
-flip_correspondece_coco_mhv2 = [(2, 5), (3, 6), (4, 7), (8, 11), (9, 12), (10, 13), (16, 17), (14, 15)]
+flip_correspondece_coco = [(2, 5), (3, 6), (4, 7), (8, 11), (9, 12), (10, 13)]
 
 
 class MHV2(Dataset):
@@ -44,7 +44,7 @@ class MHV2(Dataset):
 
         image_anno_dict = dict(image=cv2.cvtColor(image, cv2.COLOR_BGR2RGB),
                                keypoints=annos_array,
-                               flip_correspondece=flip_correspondece_coco_mhv2)
+                               flip_correspondence=flip_correspondece_coco)
         if self._transforms:
             image_anno_dict = self._transforms(**image_anno_dict)
 

@@ -1,8 +1,8 @@
 seed = 42
 gpus = [0]
-batch_size = 32
-epochs = 32
-num_workers = 8
+batch_size = 64
+epochs = 72
+num_workers = 16
 
 train_dataset_len = 40184 // batch_size
 height = 128
@@ -72,6 +72,8 @@ metric_cfgs = [
 train_transforms_cfg = dict(
     type='Compose', transforms=[
         dict(type='ResizeAndPadImage', height=height, width=width),
+        dict(type='Flip', p=0.5),
+        dict(type='Rotate', p=0.5),
         dict(type='Normalize', mean=(0., 0., 0.), std=(1., 1., 1.)),
         dict(type='ToTensorV2')
     ])

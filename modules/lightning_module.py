@@ -1,4 +1,5 @@
 from typing import Optional, Any, Dict, List
+import os
 
 import pytorch_lightning as pl
 import torch
@@ -48,7 +49,7 @@ class LightningKeypointsEstimator(pl.LightningModule):
         self._val_dataset_names = []
         self._build_models()
 
-        if checkpoint_path is not None:
+        if checkpoint_path is not None and os.path.exists(checkpoint_path):
             loaded_dict = torch.load(checkpoint_path)['state_dict']
             self.load_state_dict(loaded_dict, strict=True)
 

@@ -67,9 +67,8 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('path_to_dir', type=str)
     parser.add_argument('checkpoint_path', type=str)
-    parser.add_argument('--train_dir_order', default=True, required=False, type=str)
+    parser.add_argument('--train_dir_order', default=1, required=False, type=int)
     args = parser.parse_args()
-
     width = 128
     height = 128
     num_classes = 17

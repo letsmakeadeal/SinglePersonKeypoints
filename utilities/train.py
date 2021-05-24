@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from pathlib import Path
+import importlib.util
 
-from detector_utils.utils.other import load_module
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.utilities import rank_zero_only
@@ -10,6 +10,13 @@ import torch
 import wandb
 from utilities.builders import build_lightning_module, build_callbacks_from_cfg
 from utilities.common import seed_everything_deterministic, get_checkpoint_callback
+
+
+def load_module(module_filename: Path):
+    spec = importlib.util.spec_from_file_location(__name__, str(module_filename))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 if __name__ == '__main__':

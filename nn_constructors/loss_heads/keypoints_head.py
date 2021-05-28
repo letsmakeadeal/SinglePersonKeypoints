@@ -45,7 +45,6 @@ class KeypointsExtractorHead(nn.Module):
         self._init_layers()
 
     def _init_layers(self):
-        print('TEST=', self._channels_list[0], self._channels_list[1], self._input_feature_depth)
         self._first_hm_conv_block = nn.Sequential(
             nn.Conv2d(self._input_feature_depth, self._channels_list[0], 3, 1, 1),
             nn.BatchNorm2d(self._channels_list[0]),

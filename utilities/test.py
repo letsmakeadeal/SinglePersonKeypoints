@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     num_classes = 17
     stride = 4
-    thrs_conf = 0.1
+    thrs_conf = 0.2
 
     transforms = A.Compose([
         ResizeAndPadImage(height=height, width=width),

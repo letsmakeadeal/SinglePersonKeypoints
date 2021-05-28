@@ -19,6 +19,8 @@ coco_sceleton = [(2, 3), (3, 4), (2, 5), (2, 8),
 time_accumulator = 0
 counter = 0
 
+verbose_speed = False
+
 
 def process_image(image_initial,
                   model: pl.LightningModule,
@@ -36,7 +38,8 @@ def process_image(image_initial,
     keypoints = model.loss_head.get_keypoints(predicted=prediction,
                                               batch_info=batch_info)
     time_per_frame = time_accumulator / counter
-    print('Model speed = ', time_per_frame, ' ,fps=', 1 / time_per_frame)
+    if verbose_speed:
+        print('Model speed = ', time_per_frame, ' ,fps=', 1 / time_per_frame)
     return keypoints
 
 
@@ -68,12 +71,22 @@ if __name__ == '__main__':
     parser.add_argument('path_to_dir', type=str)
     parser.add_argument('checkpoint_path', type=str)
     parser.add_argument('--train_dir_order', default=1, required=False, type=int)
+    parser.add_argument('--big_resolution', default=True, required=False, type=int)
     args = parser.parse_args()
-    width = 128
-    height = 128
+    if args.big_resolution:
+        width = 256
+        height = 256
+        expand_channels = True
+        number_of_channels = 120
+    else:
+        width = 128
+        height = 128
+        expand_channels = False
+        number_of_channels = 30
+
     num_classes = 17
     stride = 4
-    thrs_conf = 0.2
+    thrs_conf = 0.1
 
     transforms = A.Compose([
         ResizeAndPadImage(height=height, width=width),
@@ -106,9 +119,11 @@ if __name__ == '__main__':
         type='KeypointsExtractorHead',
         input_feature_depth=30,
         output_feature_depth=num_classes,
+        channels_number=number_of_channels,
         output_stride=stride,
         thrs_conf=thrs_conf,
         use_offsets=True,
+        expand_channels=expand_channels,
         test=True
     )
     model = LightningKeypointsEstimator.load_from_checkpoint(checkpoint_path=args.checkpoint_path,

@@ -13,10 +13,23 @@ class KeypointsExtractorHead(nn.Module):
                  output_feature_depth: int,
                  use_offsets=False,
                  offsets_factor=1,
+                 channels_number=None,
                  output_stride: int = 1,
                  thrs_conf: float = 0.3,
+                 expand_channels=False,
                  test=False):
         super(KeypointsExtractorHead, self).__init__()
+        if not channels_number:
+            self._channels_number = input_feature_depth
+        else:
+            self._channels_number = channels_number
+
+        number_of_diff_convs = 2
+        if expand_channels:
+            self._channels_list = [self._channels_number // 2, self._channels_number]
+        else:
+            self._channels_list = [self._channels_number for _ in range(number_of_diff_convs)]
+
         self._input_feature_depth = input_feature_depth
         self._output_feature_depth = output_feature_depth
         self._use_offsets = use_offsets
@@ -32,36 +45,37 @@ class KeypointsExtractorHead(nn.Module):
         self._init_layers()
 
     def _init_layers(self):
+        print('TEST=', self._channels_list[0], self._channels_list[1], self._input_feature_depth)
         self._first_hm_conv_block = nn.Sequential(
-            nn.Conv2d(self._input_feature_depth, self._input_feature_depth, 3, 1, 1),
-            nn.BatchNorm2d(self._input_feature_depth),
+            nn.Conv2d(self._input_feature_depth, self._channels_list[0], 3, 1, 1),
+            nn.BatchNorm2d(self._channels_list[0]),
             nn.ReLU(inplace=False)
         )
 
         self._second_hm_conv_block = nn.Sequential(
-            nn.Conv2d(self._input_feature_depth, self._input_feature_depth, 3, 1, 1),
-            nn.BatchNorm2d(self._input_feature_depth),
+            nn.Conv2d(self._channels_list[0], self._channels_list[1], 3, 1, 1),
+            nn.BatchNorm2d(self._channels_list[1]),
             nn.ReLU(inplace=False)
         )
 
-        self._last_hm_conv_module = nn.Conv2d(self._input_feature_depth, self._output_feature_depth, 3, 1, 1)
+        self._last_hm_conv_module = nn.Conv2d(self._channels_list[1], self._output_feature_depth, 3, 1, 1)
         self._hm_layers = nn.Sequential(self._first_hm_conv_block,
                                         self._second_hm_conv_block,
                                         self._last_hm_conv_module)
         if self._use_offsets:
             self._first_offset_conv_block = nn.Sequential(
-                nn.Conv2d(self._input_feature_depth, self._input_feature_depth, 3, 1, 1),
-                nn.BatchNorm2d(self._input_feature_depth),
+                nn.Conv2d(self._input_feature_depth, self._channels_list[0], 3, 1, 1),
+                nn.BatchNorm2d(self._channels_list[0]),
                 nn.ReLU(inplace=False)
             )
 
             self._second_offset_conv_block = nn.Sequential(
-                nn.Conv2d(self._input_feature_depth, self._input_feature_depth, 3, 1, 1),
-                nn.BatchNorm2d(self._input_feature_depth),
+                nn.Conv2d(self._channels_list[0], self._channels_list[1], 3, 1, 1),
+                nn.BatchNorm2d(self._channels_number),
                 nn.ReLU(inplace=False)
             )
 
-            self._last_offset_conv_module = nn.Conv2d(self._input_feature_depth,
+            self._last_offset_conv_module = nn.Conv2d(self._channels_list[1],
                                                       self._output_feature_depth * 2, 3, 1, 1)
             self._offset_layers = nn.Sequential(self._first_offset_conv_block,
                                                 self._second_offset_conv_block,

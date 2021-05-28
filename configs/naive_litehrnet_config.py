@@ -1,12 +1,12 @@
 seed = 42
 gpus = [0]
-batch_size = 64
+batch_size = 32
 epochs = 72
-num_workers = 16
+num_workers = 8
 
 train_dataset_len = 40184 // batch_size
-height = 128
-width = 128
+height = 256
+width = 256
 
 # NOTE(i.rodin) Number of classes as in coco converted
 num_classes = 17
